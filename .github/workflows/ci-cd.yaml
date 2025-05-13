@@ -1,0 +1,56 @@
+name: CI/CD Pipeline
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Build and push blog-service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./blog-service
+        push: true
+        tags: yourdockerhub/blog-service:latest
+    
+    - name: Build and push auth-service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./auth-service
+        push: true
+        tags: yourdockerhub/auth-service:latest
+    
+    - name: Build and push analytics-service
+      uses: docker/build-push-action@v4
+      with:
+        context: ./analytics-service
+        push: true
+        tags: yourdockerhub/analytics-service:latest
+    
+    - name: Deploy to Kubernetes
+      uses: azure/k8s-deploy@v4
+      with:
+        namespace: default
+        manifests: |
+          k8s/blog-deployment.yaml
+          k8s/auth-deployment.yaml
+          k8s/analytics-deployment.yaml
+          k8s/services.yaml
+          k8s/config.yaml
+          k8s/apache-deployment.yaml
+        images: |
+          yourdockerhub/blog-service:latest
+          yourdockerhub/auth-service:latest
+          yourdockerhub/analytics-service:latest
+        kubectl-version: 'latest'

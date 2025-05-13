@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  blog:
+    build: ./blog-service
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/blog
+  auth:
+    build: ./auth-service
+    ports:
+      - "3002:3002"
+    environment:
+      - JWT_SECRET=your_jwt_secret
+  analytics:
+    build: ./analytics-service
+    ports:
+      - "3003:3003"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/analytics
+  apache:
+    image: httpd:2.4
+    ports:
+      - "80:80"
+    volumes:
+      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017" 

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apache
+  template:
+    metadata:
+      labels:
+        app: apache
+    spec:
+      containers:
+      - name: apache
+        image: httpd:2.4
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: apache-config
+          mountPath: "/usr/local/apache2/conf/httpd.conf"
+          subPath: httpd.conf
+      volumes:
+      - name: apache-config
+        configMap:
+          name: apache-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apache-config
+data:
+  httpd.conf: |
+    LoadModule proxy_module modules/mod_proxy.so
+    LoadModule proxy_http_module modules/mod_proxy_http.so
+
+    <VirtualHost *:80>
+        ProxyPreserveHost On
+        
+        ProxyPass /blog http://blog-service:3001
+        ProxyPassReverse /blog http://blog-service:3001
+        
+        ProxyPass /auth http://auth-service:3002
+        ProxyPassReverse /auth http://auth-service:3002
+        
+        ProxyPass /analytics http://analytics-service:3003
+        ProxyPassReverse /analytics-service:3003
+    </VirtualHost>
